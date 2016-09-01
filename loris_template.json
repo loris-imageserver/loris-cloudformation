@@ -1,0 +1,455 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "AWS CloudFormation Loris Template",
+    "Parameters": {
+        "KeyName": {
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+            "Type": "AWS::EC2::KeyPair::KeyName",
+            "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+        },
+        "InstanceType": {
+            "Description": "Loris Server EC2 instance type",
+            "Type": "String",
+            "Default": "t2.small",
+            "AllowedValues": [
+                "t1.micro",
+                "t2.nano",
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "t2.large",
+                "m1.small",
+                "m1.medium",
+                "m1.large",
+                "m1.xlarge",
+                "m2.xlarge",
+                "m2.2xlarge",
+                "m2.4xlarge",
+                "m3.medium",
+                "m3.large",
+                "m3.xlarge",
+                "m3.2xlarge",
+                "m4.large",
+                "m4.xlarge",
+                "m4.2xlarge",
+                "m4.4xlarge",
+                "m4.10xlarge",
+                "c1.medium",
+                "c1.xlarge",
+                "c3.large",
+                "c3.xlarge",
+                "c3.2xlarge",
+                "c3.4xlarge",
+                "c3.8xlarge",
+                "c4.large",
+                "c4.xlarge",
+                "c4.2xlarge",
+                "c4.4xlarge",
+                "c4.8xlarge",
+                "g2.2xlarge",
+                "g2.8xlarge",
+                "r3.large",
+                "r3.xlarge",
+                "r3.2xlarge",
+                "r3.4xlarge",
+                "r3.8xlarge",
+                "i2.xlarge",
+                "i2.2xlarge",
+                "i2.4xlarge",
+                "i2.8xlarge",
+                "d2.xlarge",
+                "d2.2xlarge",
+                "d2.4xlarge",
+                "d2.8xlarge",
+                "hi1.4xlarge",
+                "hs1.8xlarge",
+                "cr1.8xlarge",
+                "cc2.8xlarge",
+                "cg1.4xlarge"
+            ],
+            "ConstraintDescription": "must be a valid EC2 instance type."
+        },
+        "SSHLocation": {
+            "Description": "The IP address range that can be used to SSH to the EC2 instances",
+            "Type": "String",
+            "MinLength": "9",
+            "MaxLength": "18",
+            "Default": "0.0.0.0/0",
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+        }
+    },
+    "Mappings": {
+        "AWSInstanceType2Arch": {
+            "t1.micro": {"Arch": "PV64"},
+            "t2.nano": {"Arch": "HVM64"},
+            "t2.micro": {"Arch": "HVM64"},
+            "t2.small": {"Arch": "HVM64"},
+            "t2.medium": {"Arch": "HVM64"},
+            "t2.large": {"Arch": "HVM64"},
+            "m1.small": {"Arch": "PV64"},
+            "m1.medium": {"Arch": "PV64"},
+            "m1.large": {"Arch": "PV64"},
+            "m1.xlarge": {"Arch": "PV64"},
+            "m2.xlarge": {"Arch": "PV64"},
+            "m2.2xlarge": {"Arch": "PV64"},
+            "m2.4xlarge": {"Arch": "PV64"},
+            "m3.medium": {"Arch": "HVM64"},
+            "m3.large": {"Arch": "HVM64"},
+            "m3.xlarge": {"Arch": "HVM64"},
+            "m3.2xlarge": {"Arch": "HVM64"},
+            "m4.large": {"Arch": "HVM64"},
+            "m4.xlarge": {"Arch": "HVM64"},
+            "m4.2xlarge": {"Arch": "HVM64"},
+            "m4.4xlarge": {"Arch": "HVM64"},
+            "m4.10xlarge": {"Arch": "HVM64"},
+            "c1.medium": {"Arch": "PV64"},
+            "c1.xlarge": {"Arch": "PV64"},
+            "c3.large": {"Arch": "HVM64"},
+            "c3.xlarge": {"Arch": "HVM64"},
+            "c3.2xlarge": {"Arch": "HVM64"},
+            "c3.4xlarge": {"Arch": "HVM64"},
+            "c3.8xlarge": {"Arch": "HVM64"},
+            "c4.large": {"Arch": "HVM64"},
+            "c4.xlarge": {"Arch": "HVM64"},
+            "c4.2xlarge": {"Arch": "HVM64"},
+            "c4.4xlarge": {"Arch": "HVM64"},
+            "c4.8xlarge": {"Arch": "HVM64"},
+            "g2.2xlarge": {"Arch": "HVMG2"},
+            "g2.8xlarge": {"Arch": "HVMG2"},
+            "r3.large": {"Arch": "HVM64"},
+            "r3.xlarge": {"Arch": "HVM64"},
+            "r3.2xlarge": {"Arch": "HVM64"},
+            "r3.4xlarge": {"Arch": "HVM64"},
+            "r3.8xlarge": {"Arch": "HVM64"},
+            "i2.xlarge": {"Arch": "HVM64"},
+            "i2.2xlarge": {"Arch": "HVM64"},
+            "i2.4xlarge": {"Arch": "HVM64"},
+            "i2.8xlarge": {"Arch": "HVM64"},
+            "d2.xlarge": {"Arch": "HVM64"},
+            "d2.2xlarge": {"Arch": "HVM64"},
+            "d2.4xlarge": {"Arch": "HVM64"},
+            "d2.8xlarge": {"Arch": "HVM64"},
+            "hi1.4xlarge": {"Arch": "HVM64"},
+            "hs1.8xlarge": {"Arch": "HVM64"},
+            "cr1.8xlarge": {"Arch": "HVM64"},
+            "cc2.8xlarge": {"Arch": "HVM64"}
+        },
+        "AWSInstanceType2NATArch": {
+            "t1.micro": {"Arch": "NATPV64"},
+            "t2.nano": {"Arch": "NATHVM64"},
+            "t2.micro": {"Arch": "NATHVM64"},
+            "t2.small": {"Arch": "NATHVM64"},
+            "t2.medium": {"Arch": "NATHVM64"},
+            "t2.large": {"Arch": "NATHVM64"},
+            "m1.small": {"Arch": "NATPV64"},
+            "m1.medium": {"Arch": "NATPV64"},
+            "m1.large": {"Arch": "NATPV64"},
+            "m1.xlarge": {"Arch": "NATPV64"},
+            "m2.xlarge": {"Arch": "NATPV64"},
+            "m2.2xlarge": {"Arch": "NATPV64"},
+            "m2.4xlarge": {"Arch": "NATPV64"},
+            "m3.medium": {"Arch": "NATHVM64"},
+            "m3.large": {"Arch": "NATHVM64"},
+            "m3.xlarge": {"Arch": "NATHVM64"},
+            "m3.2xlarge": {"Arch": "NATHVM64"},
+            "m4.large": {"Arch": "NATHVM64"},
+            "m4.xlarge": {"Arch": "NATHVM64"},
+            "m4.2xlarge": {"Arch": "NATHVM64"},
+            "m4.4xlarge": {"Arch": "NATHVM64"},
+            "m4.10xlarge": {"Arch": "NATHVM64"},
+            "c1.medium": {"Arch": "NATPV64"},
+            "c1.xlarge": {"Arch": "NATPV64"},
+            "c3.large": {"Arch": "NATHVM64"},
+            "c3.xlarge": {"Arch": "NATHVM64"},
+            "c3.2xlarge": {"Arch": "NATHVM64"},
+            "c3.4xlarge": {"Arch": "NATHVM64"},
+            "c3.8xlarge": {"Arch": "NATHVM64"},
+            "c4.large": {"Arch": "NATHVM64"},
+            "c4.xlarge": {"Arch": "NATHVM64"},
+            "c4.2xlarge": {"Arch": "NATHVM64"},
+            "c4.4xlarge": {"Arch": "NATHVM64"},
+            "c4.8xlarge": {"Arch": "NATHVM64"},
+            "g2.2xlarge": {"Arch": "NATHVMG2"},
+            "g2.8xlarge": {"Arch": "NATHVMG2"},
+            "r3.large": {"Arch": "NATHVM64"},
+            "r3.xlarge": {"Arch": "NATHVM64"},
+            "r3.2xlarge": {"Arch": "NATHVM64"},
+            "r3.4xlarge": {"Arch": "NATHVM64"},
+            "r3.8xlarge": {"Arch": "NATHVM64"},
+            "i2.xlarge": {"Arch": "NATHVM64"},
+            "i2.2xlarge": {"Arch": "NATHVM64"},
+            "i2.4xlarge": {"Arch": "NATHVM64"},
+            "i2.8xlarge": {"Arch": "NATHVM64"},
+            "d2.xlarge": {"Arch": "NATHVM64"},
+            "d2.2xlarge": {"Arch": "NATHVM64"},
+            "d2.4xlarge": {"Arch": "NATHVM64"},
+            "d2.8xlarge": {"Arch": "NATHVM64"},
+            "hi1.4xlarge": {"Arch": "NATHVM64"},
+            "hs1.8xlarge": {"Arch": "NATHVM64"},
+            "cr1.8xlarge": {"Arch": "NATHVM64"},
+            "cc2.8xlarge": {"Arch": "NATHVM64"}
+        },
+        "AWSRegionArch2AMI": {
+            "us-east-1": {
+                "PV64": "ami-8ff710e2",
+                "HVM64": "ami-f5f41398",
+                "HVMG2": "ami-4afd1d27"
+            },
+            "us-west-2": {
+                "PV64": "ami-eff1028f",
+                "HVM64": "ami-9abea4fb",
+                "HVMG2": "ami-ee897b8e"
+            },
+            "us-west-1": {
+                "PV64": "ami-ac85fbcc",
+                "HVM64": "ami-9abea4fb",
+                "HVMG2": "ami-69106909"
+            },
+            "eu-west-1": {
+                "PV64": "ami-23ab2250",
+                "HVM64": "ami-b0ac25c3",
+                "HVMG2": "ami-936de5e0"
+            },
+            "eu-central-1": {
+                "PV64": "ami-27c12348",
+                "HVM64": "ami-d3c022bc",
+                "HVMG2": "ami-8e7092e1"
+            },
+            "ap-northeast-1": {
+                "PV64": "ami-26160d48",
+                "HVM64": "ami-29160d47",
+                "HVMG2": "ami-91809aff"
+            },
+            "ap-northeast-2": {
+                "PV64": "NOT_SUPPORTED",
+                "HVM64": "ami-cf32faa1",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "ap-southeast-1": {
+                "PV64": "ami-f3dd0a90",
+                "HVM64": "ami-1ddc0b7e",
+                "HVMG2": "ami-3c30e75f"
+            },
+            "ap-southeast-2": {
+                "PV64": "ami-8f94b9ec",
+                "HVM64": "ami-0c95b86f",
+                "HVMG2": "ami-543d1137"
+            },
+            "sa-east-1": {
+                "PV64": "ami-e188018d",
+                "HVM64": "ami-fb890097",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "cn-north-1": {
+                "PV64": "ami-77a46e1a",
+                "HVM64": "ami-05a66c68",
+                "HVMG2": "NOT_SUPPORTED"
+            }
+        }
+    },
+    "Resources": {
+        "LorisServerSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Enable HTTP access via port 80 locked down to the load balancer + SSH access",
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "80",
+                        "ToPort": "80",
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "22",
+                        "ToPort": "22",
+                        "CidrIp": {"Ref": "SSHLocation"}
+                    }
+                ]
+            }
+        },
+        "LorisServer": {
+            "Type": "AWS::EC2::Instance",
+            "Metadata": {"AWS::CloudFormation::Init": {
+                "configSets": {"loris_install": [
+                    "install_cfn",
+                    "install_packages",
+                    "install_python_modules",
+                    "create_loris_user",
+                    "install_loris_app",
+                    "configure_loris"
+                ]},
+                "install_cfn": {
+                    "files": {
+                        "/etc/cfn/cfn-hup.conf": {
+                            "content": {"Fn::Join": [
+                                "",
+                                [
+                                    "[main]\n",
+                                    "stack=",
+                                    {"Ref": "AWS::StackId"},
+                                    "\n",
+                                    "region=",
+                                    {"Ref": "AWS::Region"},
+                                    "\n"
+                                ]
+                            ]},
+                            "mode": "000400",
+                            "owner": "root",
+                            "group": "root"
+                        },
+                        "/etc/cfn/hooks.d/cfn-auto-reloader.conf": {
+                            "content": {"Fn::Join": [
+                                "",
+                                [
+                                    "[cfn-auto-reloader-hook]\n",
+                                    "triggers=post.update\n",
+                                    "path=Resources.LorisServer.Metadata.AWS::CloudFormation::Init\n",
+                                    "action=/opt/aws/bin/cfn-init -v ",
+                                    "         --stack ",
+                                    {"Ref": "AWS::StackName"},
+                                    "         --resource LorisServer ",
+                                    "         --configsets loris_install ",
+                                    "         --region ",
+                                    {"Ref": "AWS::Region"},
+                                    "\n"
+                                ]
+                            ]},
+                            "mode": "000400",
+                            "owner": "root",
+                            "group": "root"
+                        }
+                    },
+                    "services": {"sysvinit": {"cfn-hup": {
+                        "enabled": "true",
+                        "ensureRunning": "true",
+                        "files": [
+                            "/etc/cfn/cfn-hup.conf",
+                            "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+                        ]
+                    }}}
+                },
+                "install_packages": {"packages": {"apt": {
+                    "git": [],
+                    "libjpeg-turbo8-dev": [],
+                    "libfreetype6-dev": [],
+                    "zlib1g-dev": [],
+                    "liblcms2-dev": [],
+                    "liblcms-utils": [],
+                    "libtiff5-dev": [],
+                    "python-dev": [],
+                    "libwebp-dev": [],
+                    "apache2": [],
+                    "libapache2-mod-wsgi": []
+                }}},
+                "install_python_modules": {"commands": {
+                    "01_upgrade_pip": {"command": "sudo pip install Pillow"},
+                    "02_install_requests": {"command": "sudo pip install requests"},
+                    "03_install_configobj": {"command": "sudo pip install configobj"},
+                    "04_install_mock": {"command": "sudo pip install mock"},
+                    "05_install_responses": {"command": "sudo pip install responses"}
+                }},
+                "create_loris_user": {"commands": {
+                    "01_dir": {"command": "mkdir /home/loris"},
+                    "02_user": {"command": "useradd -d /home/loris -s /sbin/false loris"}
+                }},
+                "install_loris_app": {
+                    "sources": {
+                        "/home/loris": "https://github.com/loris-imageserver/loris/archive/development.zip"
+                    },
+                    "commands": {
+                        
+                        "01_setup": {"command": "chmod 700 setup.py", "cwd" : "/home/loris/loris-development"},
+                        "02_setup": {"command": "./setup.py install", "cwd" : "/home/loris/loris-development"},
+                        "03_setup": {"command": "sudo a2enmod headers expires"},
+                        "04_setup": {"command": "cp /home/loris/loris-development/bin/Linux/x86_64/kdu_expand /usr/local/bin"},
+                        "05_setup": {"command": "chmod 755 /usr/local/bin/kdu_expand"},
+                        "06_setup": {"command": "cp /home/loris/loris-development/lib/Linux/x86_64/libkdu_v74R.so /usr/local/lib"},
+                        "07_setup": {"command": "chmod 644 /usr/local/lib/libkdu_v74R.so"},
+                        "08_setup": {"command": "echo '/usr/local/lib' >> /etc/ld.so.conf"},
+                        "09_setup": {"command": "ldconfig"},
+                        "10_setup": {"command": "mkdir -p /usr/local/share/images/loris && chown loris:loris /usr/local/share/images/loris"}
+                    }
+                },
+                "configure_loris": {
+                    "files": { 
+                    "/etc/loris2/loris2.conf": {
+                        "source": "https://s3.amazonaws.com/<bucket name>/<path 2 your>/loris2.conf",
+                        "mode"  : "000644",
+                        "owner" : "root",
+                        "group" : "root"
+                    },
+                    "/etc/apache2/sites-available/000-default.conf": {
+                        "source": "https://s3.amazonaws.com/<bucket name>/<path 2 your>/000-default.conf",
+                        "mode"  : "000644",
+                        "owner" : "root",
+                        "group" : "root"
+                    }
+                    },
+                    "commands": {
+                        "01_apache_restart": {"command": "service apache2 restart"}
+                    }
+                }
+            }},
+            "Properties": {
+                "ImageId": {"Fn::FindInMap": [
+                    "AWSRegionArch2AMI",
+                    {"Ref": "AWS::Region"},
+                    {"Fn::FindInMap": [
+                        "AWSInstanceType2Arch",
+                        {"Ref": "InstanceType"},
+                        "Arch"
+                    ]}
+                ]},
+                "InstanceType": {"Ref": "InstanceType"},
+                "SecurityGroups": [{"Ref": "LorisServerSecurityGroup"}],
+                "KeyName": {"Ref": "KeyName"},
+                "UserData": {"Fn::Base64": {"Fn::Join": [
+                    "",
+                    [
+                        "#!/bin/bash -xe\n",
+                        "apt-get update\n",
+                        "apt-get dist-upgrade -y\n",
+                        "apt-get install -y python-setuptools python-pip\n",
+                        "easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n",
+                        "pip install pyopenssl ndg-httpsclient pyasn1\n",
+                        "cp /usr/local/bin/cfn-hup /etc/init.d/cfn-hup \n",
+                        "chmod +x /etc/init.d/cfn-hup \n",
+                        "update-rc.d cfn-hup defaults \n ",
+                        "service cfn-hup start \n",
+                        "/usr/local/bin/cfn-init -v ",
+                        "         --stack ",
+                        {"Ref": "AWS::StackName"},
+                        "         --resource LorisServer ",
+                        "         --configsets loris_install ",
+                        "         --region ",
+                        {"Ref": "AWS::Region"},
+                        "\n",
+                        "/usr/local/bin/cfn-signal -e $? ",
+                        "         --stack ",
+                        {"Ref": "AWS::StackName"},
+                        "         --resource LorisServer ",
+                        "         --region ",
+                        {"Ref": "AWS::Region"},
+                        "\n"
+                    ]
+                ]}}
+            }
+        }
+    },
+    "Outputs": {"WebsiteURL": {
+        "Value": {"Fn::Join": [
+            "",
+            [
+                "http://",
+                {"Fn::GetAtt": [
+                    "LorisServer",
+                    "PublicDnsName"
+                ]},
+                "/"
+            ]
+        ]},
+        "Description": "Loris Server URL"
+    }}
+}
