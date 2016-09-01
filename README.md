@@ -1,12 +1,22 @@
-# loris-cloudformation
+Amazon AWS Cloudformation templates for deploying Loris
+===========
 
-These Amazon AWS Cloudformation templates may be used to deploy Loris servers into AWS.
+# loris_efs_autoscaling_template.json
 
-The template file "loris_efs_autoscaling_template.json" can be used to deploy a group of
+This template file may be used to deploy a group of
 Loris servers into a specified VPC.
-The server group will autoscale depending on server load and use a shared Elastic File System
-to cache source and derived images.  The original source images are pulled from an S3
-bucket which must be configured in the Resolver section of the loris2.conf file.
+The server group will:
+ * autoscale depending on CPU load sending email notifications when it does
+ * use a shared Elastic File System to cache images
+ * pull source images from an S3 bucket
 
-The template file "loris_template.json" may be used to deploy a simple Loris server into
+You will need to edit the json template file to point to your own loris2.conf and 000-default.conf
+files in your S3 bucket (or wherever you choose to make them available).
+
+You will also need to edit the loris2.conf file to set "source_prefix" in the resolver section
+to the S3 bucket containing your source images.
+
+# loris_template.json
+
+This template may be used to deploy a simple Loris server into
 the default VPC.
